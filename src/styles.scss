@@ -210,6 +210,18 @@ button { font-family: inherit; cursor: pointer; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+// ─── Loading bar animation ────────────────────────────────────────────────────
+.animate-loading-bar {
+  width: 30%;
+  animation: loadingBar 1.4s ease-in-out infinite;
+  border-radius: 999px;
+}
+
+@keyframes loadingBar {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
 // ─── Table premium ───────────────────────────────────────────────────────────
 .table-premium {
   tbody tr {

@@ -11,5 +11,35 @@ export interface News {
   slug: string;
   authorId?: string;
   authorName?: string;
+  authorPhoto?: string;
   isFeatured?: boolean;
+  commentCount?: number;
+  viewCount?: number;
+  likeCount?: number;
+}
+
+export interface NewsComment {
+  id: string;
+  newsId: string;
+  content: string;
+  authorId: string;
+  authorName: string;
+  authorPhoto?: string;
+  createdAt: string;
+  parentId?: string | null;
+  replies?: NewsComment[];
+  likes: number;
+  views: number;
+  reactions: CommentReaction[];
+}
+
+export interface CommentReaction {
+  emoji: string;
+  count: number;
+  userHasReacted: boolean;
+}
+
+export interface NewsFilter {
+  category?: string;
+  search?: string;
 }

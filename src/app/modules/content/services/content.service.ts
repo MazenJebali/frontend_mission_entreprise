@@ -9,9 +9,9 @@ import { PagedResult } from '../../../core/models/result.model';
 export class ContentService {
   constructor(private api: ApiService) {}
 
-  private pageFrom<T>(p: any, page: number, pageSize: number, mapper: (x: any) => T): PagedResult<T> {
+  private pageFrom<T>(p: any, page: number, pageSize: number): PagedResult<T> {
     return {
-      data: (p.data ?? []).map(mapper),
+      data: (p.data ?? []) as T[],
       total: p.totalCount ?? 0,
       page,
       pageSize,
@@ -23,46 +23,21 @@ export class ContentService {
     if (filter.category) params.category = filter.category;
     if (filter.search) params.search = filter.search;
     return this.api.get<any>('/news', params).pipe(
-      map(p => this.pageFrom(p, page, pageSize, (n: any) => n as News))
+      map(p => this.pageFrom<News>(p, page, pageSize))
     );
   }
 
-  getBySlug(slug: string): Observable<News> {
-    return this.api.get<any>(`/news/${slug}`).pipe(
+  getById(id: number): Observable<News> {
+    return this.api.get<any>(`/news/${id}`).pipe(
       map(r => (r.data ?? r) as News)
     );
   }
 
-  getFeatured(): Observable<News[]> {
-    return this.api.get<any>('/news/featured').pipe(
-      map(r => ((r.data ?? r) ?? []) as News[])
+  addComment(newsId: number, content: string, parentCommentId?: number | null, fileUrl?: string): Observable<NewsComment> {
+    const body: any = { content, parentCommentId: parentCommentId ?? 0 };
+    if (fileUrl) body.fileUrl = fileUrl;
+    return this.api.post<any>(`/news/${newsId}/comments`, body).pipe(
+      map(r => (r.data ?? r) as NewsComment)
     );
-  }
-
-  getComments(newsId: string): Observable<NewsComment[]> {
-    return this.api.get<any[]>(`/news/${newsId}/comments`).pipe(
-      map(arr => (arr ?? []).map(c => this.mapComment(c)))
-    );
-  }
-
-  addComment(newsId: string, content: string, parentId?: string): Observable<NewsComment> {
-    return this.api.post<any>(`/news/${newsId}/comments`, { content, parentId }).pipe(
-      map(c => this.mapComment(c.data ?? c))
-    );
-  }
-
-  reactToComment(newsId: string, commentId: string, emoji: string): Observable<any> {
-    return this.api.post<any>(`/news/${newsId}/comments/${commentId}/react`, { emoji });
-  }
-
-  likeComment(newsId: string, commentId: string): Observable<any> {
-    return this.api.post<any>(`/news/${newsId}/comments/${commentId}/like`, {});
-  }
-
-  private mapComment(c: any): NewsComment {
-    return {
-      ...c,
-      replies: (c.replies ?? []).map((r: any) => this.mapComment(r)),
-    };
   }
 }

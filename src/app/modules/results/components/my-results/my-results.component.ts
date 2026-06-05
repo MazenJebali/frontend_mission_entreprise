@@ -19,7 +19,7 @@ export class MyResultsComponent implements OnInit {
 
   ngOnInit(): void {
     const user = this.auth.currentUser;
-    if (user) this.loadResults(user.id);
+    if (user) this.loadResults(String(user.id));
   }
 
   loadResults(athleteId: string): void {
@@ -32,6 +32,6 @@ export class MyResultsComponent implements OnInit {
 
   onPageChange(p: number): void {
     this.page = p;
-    this.loadResults(this.auth.currentUser!.id);
+    this.loadResults(String(this.auth.currentUser!.id));
   }
 }

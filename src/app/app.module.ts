@@ -7,7 +7,6 @@ import { AppComponent }           from './app.component';
 import { CoreModule }             from './core/core.module';
 import { SharedModule }           from './shared/shared.module';
 import { CamelCaseInterceptor }   from './core/interceptors/camelcase.interceptor';
-import { MockNewsInterceptor }    from './core/mock/mock-news.interceptor';
 
 @NgModule({
   declarations: [AppComponent],
@@ -19,8 +18,7 @@ import { MockNewsInterceptor }    from './core/mock/mock-news.interceptor';
     SharedModule
   ],
   providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: CamelCaseInterceptor, multi: true },
-    { provide: HTTP_INTERCEPTORS, useClass: MockNewsInterceptor, multi: true }
+    { provide: HTTP_INTERCEPTORS, useClass: CamelCaseInterceptor, multi: true }
   ],
   bootstrap: [AppComponent]
 })

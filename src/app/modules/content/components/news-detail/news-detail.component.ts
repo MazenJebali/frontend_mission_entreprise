@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { AuthService } from '../../../../core/services/auth.service';
 import { ContentService } from '../../services/content.service';
 import { News, NewsComment } from '../../../../core/models/news.model';
 
@@ -12,17 +11,12 @@ import { News, NewsComment } from '../../../../core/models/news.model';
 })
 export class NewsDetailComponent implements OnInit {
   news?: News;
-  comments: NewsComment[] = [];
   loading = true;
-  loadingComments = false;
 
   commentForm: FormGroup;
   replyForm: FormGroup;
-  replyTo: string | null = null;
+  replyTo: number | null = null;
   replyToName: string | null = null;
-
-  showEmojiPicker: string | null = null;
-  availableEmojis = ['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '💯'];
 
   commentFile: File | null = null;
   replyFile: File | null = null;
@@ -31,8 +25,7 @@ export class NewsDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private fb: FormBuilder,
-    private contentService: ContentService,
-    public authService: AuthService
+    private contentService: ContentService
   ) {
     this.commentForm = this.fb.group({ content: ['', [Validators.required, Validators.minLength(1)]] });
     this.replyForm = this.fb.group({ content: ['', [Validators.required, Validators.minLength(1)]] });
@@ -40,62 +33,36 @@ export class NewsDetailComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => {
-      const slug = params.get('slug');
-      if (slug) {
-        this.loadNews(slug);
-        this.loadComments(slug);
+      const id = params.get('id');
+      if (id) {
+        this.loadNews(+id);
       }
     });
   }
 
-  private loadNews(slug: string): void {
+  private loadNews(id: number): void {
     this.loading = true;
-    this.contentService.getBySlug(slug).subscribe({
-      next: n => { this.news = n; this.loading = false; },
+    this.contentService.getById(id).subscribe({
+      next: n => { this.news = { ...n, comments: n.comments ?? [] }; this.loading = false; },
       error: () => { this.loading = false; this.router.navigate(['/news']); }
     });
   }
 
-  private loadComments(slug: string): void {
-    this.loadingComments = true;
-    this.contentService.getComments(slug).subscribe({
-      next: c => { this.comments = this.buildTree(c); this.loadingComments = false; },
-      error: () => { this.loadingComments = false; }
-    });
-  }
-
-  private buildTree(comments: NewsComment[]): NewsComment[] {
-    const map = new Map<string, NewsComment>();
-    const roots: NewsComment[] = [];
-    comments.forEach(c => map.set(c.id, { ...c, replies: [] }));
-    comments.forEach(c => {
-      if (c.parentId && map.has(c.parentId)) {
-        map.get(c.parentId)!.replies!.push(map.get(c.id)!);
-      } else {
-        roots.push(map.get(c.id)!);
-      }
-    });
-    return roots;
-  }
-
   submitComment(): void {
     if (this.commentForm.invalid || !this.news) return;
-    this.contentService.addComment(this.news.slug, this.commentForm.value.content).subscribe({
+    const fileUrl = this.commentFile ? URL.createObjectURL(this.commentFile) : undefined;
+    this.contentService.addComment(this.news.id, this.commentForm.value.content, null, fileUrl).subscribe({
       next: () => {
         this.commentForm.reset();
-        this.loadComments(this.news!.slug);
+        this.commentFile = null;
+        this.loadNews(this.news!.id);
       }
     });
   }
 
   startReply(comment: NewsComment): void {
-    // Require login module first
-    // if (!this.isLoggedIn) {
-    //   this.router.navigate(['/auth/login']);
-    //   return;
-    // }
     this.replyTo = comment.id;
-    this.replyToName = comment.authorName;
+    this.replyToName = this.authorName(comment.author);
     this.replyForm.reset();
   }
 
@@ -106,35 +73,16 @@ export class NewsDetailComponent implements OnInit {
 
   submitReply(): void {
     if (this.replyForm.invalid || !this.news || !this.replyTo) return;
-    this.contentService.addComment(this.news.slug, this.replyForm.value.content, this.replyTo).subscribe({
+    const fileUrl = this.replyFile ? URL.createObjectURL(this.replyFile) : undefined;
+    this.contentService.addComment(this.news.id, this.replyForm.value.content, this.replyTo, fileUrl).subscribe({
       next: () => {
         this.replyForm.reset();
+        this.replyFile = null;
         this.replyTo = null;
         this.replyToName = null;
-        this.loadComments(this.news!.slug);
+        this.loadNews(this.news!.id);
       }
     });
-  }
-
-  reactToComment(comment: NewsComment, emoji: string): void {
-    if (!this.news) return;
-    this.contentService.reactToComment(this.news.slug, comment.id, emoji).subscribe({
-      next: () => {
-        this.showEmojiPicker = null;
-        this.loadComments(this.news!.slug);
-      }
-    });
-  }
-
-  likeComment(comment: NewsComment): void {
-    if (!this.news) return;
-    this.contentService.likeComment(this.news.slug, comment.id).subscribe({
-      next: () => this.loadComments(this.news!.slug)
-    });
-  }
-
-  toggleEmojiPicker(commentId: string): void {
-    this.showEmojiPicker = this.showEmojiPicker === commentId ? null : commentId;
   }
 
   onCommentFileSelected(event: Event): void {
@@ -155,17 +103,12 @@ export class NewsDetailComponent implements OnInit {
     this.replyFile = null;
   }
 
-  get isLoggedIn(): boolean {
-    return this.authService.isLoggedIn();
+  get topLevelComments(): NewsComment[] {
+    return (this.news?.comments ?? []).filter(c => !c.parentCommentId);
   }
 
-  get currentUserName(): string {
-    const u = this.authService.currentUser;
-    return u ? `${u.firstName} ${u.lastName}` : '';
-  }
-
-  get currentUserPhoto(): string | undefined {
-    return this.authService.currentUser?.photo;
+  getReplies(commentId: number): NewsComment[] {
+    return (this.news?.comments ?? []).filter(c => c.parentCommentId === commentId);
   }
 
   categoryLabel(cat: string): string {
@@ -180,7 +123,7 @@ export class NewsDetailComponent implements OnInit {
     return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
-  getInitials(name: string): string {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  authorName(a: { firstName: string; lastName: string }): string {
+    return `${a.firstName} ${a.lastName}`;
   }
 }

@@ -1,42 +1,30 @@
 export type NewsCategory = 'natation' | 'water-polo' | 'plongeon' | 'eau-libre' | 'general' | 'annonce';
 
+export interface AuthorDto {
+  id: number;
+  firstName: string;
+  lastName: string;
+}
+
 export interface News {
-  id: string;
+  id: number;
   title: string;
-  content: string;
-  excerpt?: string;
-  publishedAt: string;
+  description: string;
   category: NewsCategory;
-  imageUrl?: string;
-  slug: string;
-  authorId?: string;
-  authorName?: string;
-  authorPhoto?: string;
-  isFeatured?: boolean;
-  commentCount?: number;
-  viewCount?: number;
-  likeCount?: number;
+  date: string;
+  author: AuthorDto;
+  comments: NewsComment[];
+  createdAt: string;
 }
 
 export interface NewsComment {
-  id: string;
-  newsId: string;
+  id: number;
   content: string;
-  authorId: string;
-  authorName: string;
-  authorPhoto?: string;
+  fileUrl?: string;
+  author: AuthorDto;
   createdAt: string;
-  parentId?: string | null;
+  parentCommentId?: number | null;
   replies?: NewsComment[];
-  likes: number;
-  views: number;
-  reactions: CommentReaction[];
-}
-
-export interface CommentReaction {
-  emoji: string;
-  count: number;
-  userHasReacted: boolean;
 }
 
 export interface NewsFilter {

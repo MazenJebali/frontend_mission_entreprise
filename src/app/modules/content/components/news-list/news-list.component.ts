@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { News, NewsCategory, NewsFilter } from '../../../../core/models/news.model';
+import { News, NewsFilter } from '../../../../core/models/news.model';
 import { ContentService } from '../../services/content.service';
 
 @Component({
@@ -10,7 +10,6 @@ import { ContentService } from '../../services/content.service';
 })
 export class NewsListComponent implements OnInit {
   news: News[] = [];
-  featured: News | null = null;
   total = 0;
   page = 1;
   pageSize = 12;
@@ -36,7 +35,6 @@ export class NewsListComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
-    this.loadFeatured();
   }
 
   load(): void {
@@ -51,14 +49,6 @@ export class NewsListComponent implements OnInit {
       error: () => {
         this.loading = false;
         this.initialLoading = false;
-      }
-    });
-  }
-
-  loadFeatured(): void {
-    this.contentService.getFeatured().subscribe({
-      next: items => {
-        if (items.length > 0) this.featured = items[0];
       }
     });
   }
@@ -85,16 +75,12 @@ export class NewsListComponent implements OnInit {
     this.load();
   }
 
-  navigateTo(slug: string): void {
-    this.router.navigate(['/news', slug]);
+  navigateTo(id: number): void {
+    this.router.navigate(['/news', id]);
   }
 
   formatDate(d: string): string {
     return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-  }
-
-  getInitials(name: string): string {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   }
 
   categoryLabel(cat: string): string {
@@ -103,5 +89,9 @@ export class NewsListComponent implements OnInit {
       'eau-libre': 'Eau Libre', general: 'Général', annonce: 'Annonce'
     };
     return labels[cat] ?? cat;
+  }
+
+  authorName(a: { firstName: string; lastName: string }): string {
+    return `${a.firstName} ${a.lastName}`;
   }
 }

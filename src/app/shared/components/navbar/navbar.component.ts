@@ -25,7 +25,8 @@ export class NavbarComponent implements OnInit {
     { label: 'Résultats',  path: '/results',      icon: '🏆' },
     { label: 'Calendrier', path: '/competitions',  icon: '📅' },
     { label: 'Athlètes',   path: '/athletes',      icon: '🏊' },
-    { label: 'Actualités', path: '/news',           icon: '📰' }
+    { label: 'Forum',      path: '/news',          icon: '📰' },
+    { label: 'Actualité',  path: '/actualite',     icon: '📢' }
   ];
 
   constructor(public auth: AuthService, private router: Router) {}

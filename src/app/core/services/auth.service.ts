@@ -1,32 +1,37 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap, switchMap } from 'rxjs';
 import { ApiService } from './api.service';
 import { User, LoginRequest, AuthResponse, UserRole } from '../models/user.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly TOKEN_KEY = 'ftn_token';
-  private readonly USER_KEY  = 'ftn_user';
 
-  private currentUserSubject = new BehaviorSubject<User | null>(this.loadUser());
+  private currentUserSubject = new BehaviorSubject<User | null>(null);
   currentUser$ = this.currentUserSubject.asObservable();
 
-  constructor(private api: ApiService, private router: Router) {}
+  constructor(private api: ApiService, private router: Router) {
+    this.loadUser();
+  }
 
-  login(credentials: LoginRequest): Observable<AuthResponse> {
-    return this.api.post<AuthResponse>('/auth/login', credentials).pipe(
-      tap(res => {
-        localStorage.setItem(this.TOKEN_KEY, res.token);
-        localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
-        this.currentUserSubject.next(res.user);
+  login(credentials: LoginRequest): Observable<User> {
+    return this.api.post<any>('/auth/login', credentials).pipe(
+      switchMap(res => {
+        const authData = res.data as AuthResponse;
+        localStorage.setItem(this.TOKEN_KEY, authData.accessToken);
+        return this.api.get<any>('/auth/me').pipe(
+          tap(me => {
+            const user = (me.data ?? me) as User;
+            this.currentUserSubject.next(user);
+          })
+        );
       })
     );
   }
 
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.USER_KEY);
     this.currentUserSubject.next(null);
     this.router.navigate(['/auth/login']);
   }
@@ -47,8 +52,13 @@ export class AuthService {
     return this.currentUserSubject.value;
   }
 
-  private loadUser(): User | null {
-    const raw = localStorage.getItem(this.USER_KEY);
-    return raw ? JSON.parse(raw) : null;
+  private loadUser(): void {
+    const token = this.getToken();
+    if (token) {
+      this.api.get<any>('/auth/me').subscribe({
+        next: res => this.currentUserSubject.next((res.data ?? res) as User),
+        error: () => { this.logout(); }
+      });
+    }
   }
 }

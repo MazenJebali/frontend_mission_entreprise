@@ -1,53 +1,20 @@
-export type UserRole = 'ADMIN' | 'COACH' | 'ATHLETE';
+export type UserRole = 'ADMIN' | 'USER';
+export type UserStatus = 'ACTIVE' | 'INACTIVE';
 
 export interface User {
-  id: string;
+  id: number;
   email: string;
   role: UserRole;
   firstName: string;
   lastName: string;
-  phone?: string;
-  photo?: string;
-  isActive: boolean;
-  createdAt: string;
+  status: UserStatus;
 }
-
-export interface Athlete extends User {
-  licenseNumber: string;
-  nationality: string;
-  gender: 'M' | 'F';
-  birthYear: number;
-  dateOfBirth?: string;
-  height?: number;
-  weight?: number;
-  ageCategory: AgeCategory;
-  clubId?: string;
-  clubName?: string;
-}
-
-export interface Coach extends User {
-  licenseNumber: string;
-  specialization: string;
-  yearsOfExperience: number;
-  clubId?: string;
-  clubName?: string;
-}
-
-export interface Admin extends User {
-  department: string;
-}
-
-export type AgeCategory =
-  | 'Poussin'
-  | 'Benjamin'
-  | 'Minime'
-  | 'Cadet'
-  | 'Junior'
-  | 'Senior';
 
 export interface AuthResponse {
-  token: string;
-  user: User;
+  email: string;
+  firstName: string;
+  lastName: string;
+  accessToken: string;
 }
 
 export interface LoginRequest {
